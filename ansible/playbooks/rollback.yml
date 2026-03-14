@@ -29,6 +29,7 @@
         --wait
         --timeout {{ helm_timeout }}
       register: rollback_result
+      changed_when: "'Rollback was a success' in rollback_result.stdout"
 
     - name: Display rollback result
       ansible.builtin.debug:

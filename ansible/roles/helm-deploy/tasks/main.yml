@@ -4,7 +4,8 @@
 - name: Update Helm chart dependencies
   ansible.builtin.command: >
     helm dependency update {{ helm_chart_path }}
-  changed_when: true
+  register: helm_dep_update
+  changed_when: "'getting' in helm_dep_update.stdout or 'found' in helm_dep_update.stdout"
 
 - name: Deploy Helm chart
   ansible.builtin.command: >
@@ -19,6 +20,7 @@
     --set frontend.image.repository={{ frontend_image_repository }}
     --set frontend.image.tag={{ frontend_image_tag }}
   register: helm_deploy
+  changed_when: "'Release' in helm_deploy.stdout"
 
 - name: Display deployment result
   ansible.builtin.debug:

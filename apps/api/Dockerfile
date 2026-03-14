@@ -2,7 +2,9 @@
 FROM rust:1.77-slim AS builder
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends pkg-config libssl-dev && \
+    apt-get install -y --no-install-recommends \
+    pkg-config=0.29.2-1 \
+    libssl-dev=3.0.15-1~deb12u1 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

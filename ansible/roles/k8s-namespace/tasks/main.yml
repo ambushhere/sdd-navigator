@@ -19,4 +19,5 @@
     app.kubernetes.io/managed-by=ansible
     environment={{ target_env | default('dev') }}
     --overwrite
-  changed_when: true
+  register: label_ns
+  changed_when: "'labeled' in label_ns.stdout"
