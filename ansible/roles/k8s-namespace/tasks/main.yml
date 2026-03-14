@@ -1,0 +1,22 @@
+---
+# Role: k8s-namespace — Create Kubernetes namespace
+
+- name: Check if namespace exists
+  ansible.builtin.command: >
+    kubectl get namespace {{ k8s_namespace }}
+  register: ns_check
+  failed_when: false
+  changed_when: false
+
+- name: Create namespace
+  ansible.builtin.command: >
+    kubectl create namespace {{ k8s_namespace }}
+  when: ns_check.rc != 0
+
+- name: Label namespace
+  ansible.builtin.command: >
+    kubectl label namespace {{ k8s_namespace }}
+    app.kubernetes.io/managed-by=ansible
+    environment={{ target_env | default('dev') }}
+    --overwrite
+  changed_when: true

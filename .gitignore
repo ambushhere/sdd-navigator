@@ -1,0 +1,31 @@
+# Rust
+apps/api/target/
+*.rs.bk
+
+# Node.js
+apps/frontend/node_modules/
+apps/frontend/.next/
+apps/frontend/out/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Helm
+helm/sdd-navigator/charts/*.tgz
+helm/sdd-navigator/Chart.lock
+
+# Ansible
+ansible/*.retry
+ansible/**/*.retry
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

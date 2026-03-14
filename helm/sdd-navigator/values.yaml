@@ -1,0 +1,71 @@
+# ---------------------------------------------------------
+# SDD Navigator — Default Values
+# ---------------------------------------------------------
+
+# -- API sub-chart overrides --
+api:
+  replicaCount: 2
+  image:
+    repository: sdd-navigator/api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: false
+    className: nginx
+    host: api.sdd-navigator.local
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  env:
+    DATABASE_URL: ""   # Overridden per environment
+    API_HOST: "0.0.0.0"
+    API_PORT: "8080"
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+
+# -- Frontend sub-chart overrides --
+frontend:
+  replicaCount: 2
+  image:
+    repository: sdd-navigator/frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  ingress:
+    enabled: false
+    className: nginx
+    host: sdd-navigator.local
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  env:
+    API_URL: "http://sdd-navigator-api:8080"
+
+# -- PostgreSQL (Bitnami) --
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "changeme"
+    username: "sdd"
+    password: "sdd_password"
+    database: "sdd_navigator"
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi

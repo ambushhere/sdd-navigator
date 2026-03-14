@@ -1,0 +1,13 @@
+---
+# Playbook: Setup Kubernetes cluster prerequisites
+# Usage: ansible-playbook -i inventories/dev/hosts.yml playbooks/setup-cluster.yml
+
+- name: Setup Kubernetes cluster prerequisites
+  hosts: k8s_controllers
+  gather_facts: false
+  vars:
+    target_env: dev
+
+  roles:
+    - role: k8s-namespace
+    - role: k8s-prerequisites

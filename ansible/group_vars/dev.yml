@@ -1,0 +1,11 @@
+---
+# Dev environment variables
+helm_values_file: "values-dev.yaml"
+k8s_namespace: "sdd-navigator-dev"
+
+# PostgreSQL
+db_password: "dev_password"
+
+# Resources — minimal for dev
+api_replicas: 1
+frontend_replicas: 1

@@ -1,0 +1,17 @@
+---
+# Common variables for all environments
+app_name: sdd-navigator
+helm_chart_path: "{{ playbook_dir }}/../../helm/sdd-navigator"
+k8s_namespace: "{{ app_name }}"
+helm_release_name: "{{ app_name }}"
+helm_timeout: "600s"
+
+# Image settings
+api_image_repository: sdd-navigator/api
+api_image_tag: latest
+frontend_image_repository: sdd-navigator/frontend
+frontend_image_tag: latest
+
+# Ingress controller
+ingress_controller_enabled: true
+ingress_controller_namespace: ingress-nginx

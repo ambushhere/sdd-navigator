@@ -1,0 +1,47 @@
+---
+# Playbook: Rollback SDD Navigator deployment
+# Usage: ansible-playbook -i inventories/dev/hosts.yml playbooks/rollback.yml
+
+- name: Rollback SDD Navigator
+  hosts: k8s_controllers
+  gather_facts: false
+  vars:
+    rollback_revision: ""  # Empty = previous revision
+
+  tasks:
+    - name: Get current Helm release history
+      ansible.builtin.command: >
+        helm history {{ helm_release_name }}
+        --namespace {{ k8s_namespace }}
+        --max 5
+      changed_when: false
+      register: helm_history
+
+    - name: Display release history
+      ansible.builtin.debug:
+        var: helm_history.stdout_lines
+
+    - name: Rollback Helm release
+      ansible.builtin.command: >
+        helm rollback {{ helm_release_name }}
+        {{ rollback_revision }}
+        --namespace {{ k8s_namespace }}
+        --wait
+        --timeout {{ helm_timeout }}
+      register: rollback_result
+
+    - name: Display rollback result
+      ansible.builtin.debug:
+        var: rollback_result.stdout_lines
+
+    - name: Verify deployment status
+      ansible.builtin.command: >
+        kubectl get pods
+        --namespace {{ k8s_namespace }}
+        -l app.kubernetes.io/instance={{ helm_release_name }}
+      changed_when: false
+      register: pod_status
+
+    - name: Display pod status
+      ansible.builtin.debug:
+        var: pod_status.stdout_lines

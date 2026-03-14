@@ -1,0 +1,23 @@
+---
+# Playbook: Deploy SDD Navigator via Helm
+# Usage: ansible-playbook -i inventories/dev/hosts.yml playbooks/deploy.yml
+
+- name: Deploy SDD Navigator
+  hosts: k8s_controllers
+  gather_facts: false
+  vars:
+    target_env: dev
+
+  pre_tasks:
+    - name: Verify kubectl connectivity
+      ansible.builtin.command: kubectl cluster-info
+      changed_when: false
+      register: cluster_info
+
+    - name: Display cluster info
+      ansible.builtin.debug:
+        var: cluster_info.stdout_lines
+
+  roles:
+    - role: k8s-namespace
+    - role: helm-deploy

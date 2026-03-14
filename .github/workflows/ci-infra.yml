@@ -1,0 +1,196 @@
+---
+name: CI — Infrastructure Validation
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "helm/**"
+      - "ansible/**"
+      - "apps/**/Dockerfile"
+      - ".github/workflows/ci-infra.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "helm/**"
+      - "ansible/**"
+      - "apps/**/Dockerfile"
+      - ".github/workflows/ci-infra.yml"
+
+jobs:
+  # -------------------------------------------------------
+  # Job 1: Lint YAML files
+  # -------------------------------------------------------
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Create yamllint config
+        run: |
+          cat > .yamllint.yml << 'EOF'
+          extends: default
+          rules:
+            line-length:
+              max: 200
+              level: warning
+            truthy:
+              allowed-values: ['true', 'false', 'yes', 'no']
+            comments:
+              min-spaces-from-content: 1
+            document-start:
+              present: false
+          ignore: |
+            helm/**/templates/
+            node_modules/
+          EOF
+
+      - name: Run yamllint on Ansible
+        run: yamllint ansible/
+
+      - name: Run yamllint on Helm values
+        run: yamllint helm/sdd-navigator/values*.yaml helm/sdd-navigator/Chart.yaml
+
+  # -------------------------------------------------------
+  # Job 2: Lint Helm charts
+  # -------------------------------------------------------
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Add Bitnami repo
+        run: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Update Helm dependencies
+        run: helm dependency update helm/sdd-navigator/
+
+      - name: Lint API sub-chart
+        run: helm lint helm/sdd-navigator/charts/api/
+
+      - name: Lint Frontend sub-chart
+        run: helm lint helm/sdd-navigator/charts/frontend/
+
+      - name: Lint umbrella chart
+        run: helm lint helm/sdd-navigator/
+
+  # -------------------------------------------------------
+  # Job 3: Validate Helm template rendering
+  # -------------------------------------------------------
+  helm-template:
+    name: Helm Template Validation
+    runs-on: ubuntu-latest
+    needs: helm-lint
+    strategy:
+      matrix:
+        values-file: [values-dev.yaml, values-prod.yaml]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Add Bitnami repo
+        run: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Update Helm dependencies
+        run: helm dependency update helm/sdd-navigator/
+
+      - name: Render templates (${{ matrix.values-file }})
+        run: |
+          helm template test-release helm/sdd-navigator/ \
+            -f helm/sdd-navigator/${{ matrix.values-file }} \
+            --namespace sdd-navigator-test \
+            > /tmp/rendered.yaml
+
+      - name: Validate rendered YAML syntax
+        run: |
+          python3 -c "
+          import yaml, sys
+          with open('/tmp/rendered.yaml') as f:
+              list(yaml.safe_load_all(f))
+          print('All templates render valid YAML')
+          "
+
+  # -------------------------------------------------------
+  # Job 4: Lint Ansible playbooks
+  # -------------------------------------------------------
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Ansible and ansible-lint
+        run: pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/playbooks/*.yml
+        env:
+          ANSIBLE_ROLES_PATH: ansible/roles
+
+  # -------------------------------------------------------
+  # Job 5: Lint Dockerfiles
+  # -------------------------------------------------------
+  dockerfile-lint:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint API Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: apps/api/Dockerfile
+          failure-threshold: warning
+
+      - name: Lint Frontend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: apps/frontend/Dockerfile
+          failure-threshold: warning
+
+  # -------------------------------------------------------
+  # Job 6: Summary
+  # -------------------------------------------------------
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [yaml-lint, helm-lint, helm-template, ansible-lint, dockerfile-lint]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "=== CI Infrastructure Validation Results ==="
+          echo "YAML Lint:       ${{ needs.yaml-lint.result }}"
+          echo "Helm Lint:       ${{ needs.helm-lint.result }}"
+          echo "Helm Template:   ${{ needs.helm-template.result }}"
+          echo "Ansible Lint:    ${{ needs.ansible-lint.result }}"
+          echo "Dockerfile Lint: ${{ needs.dockerfile-lint.result }}"
+
+          if [[ "${{ needs.yaml-lint.result }}" == "failure" || \
+                "${{ needs.helm-lint.result }}" == "failure" || \
+                "${{ needs.helm-template.result }}" == "failure" || \
+                "${{ needs.ansible-lint.result }}" == "failure" || \
+                "${{ needs.dockerfile-lint.result }}" == "failure" ]]; then
+            echo "::error::One or more CI checks failed!"
+            exit 1
+          fi
+
+          echo "All checks passed!"

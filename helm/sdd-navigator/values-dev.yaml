@@ -1,0 +1,33 @@
+# ---------------------------------------------------------
+# SDD Navigator — Dev Environment Overrides
+# ---------------------------------------------------------
+
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  env:
+    DATABASE_URL: "postgres://sdd:sdd_password@sdd-navigator-postgresql:5432/sdd_navigator"
+    RUST_LOG: "debug"
+  autoscaling:
+    enabled: false
+
+frontend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+postgresql:
+  primary:
+    persistence:
+      size: 1Gi

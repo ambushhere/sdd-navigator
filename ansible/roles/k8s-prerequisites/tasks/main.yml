@@ -1,0 +1,38 @@
+---
+# Role: k8s-prerequisites — Install cluster prerequisites
+
+- name: Add ingress-nginx Helm repository
+  ansible.builtin.command: >
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+  register: repo_add
+  changed_when: "'has been added' in repo_add.stdout"
+  failed_when: false
+  when: ingress_controller_enabled | default(true)
+
+- name: Update Helm repositories
+  ansible.builtin.command: helm repo update
+  changed_when: false
+  when: ingress_controller_enabled | default(true)
+
+- name: Install ingress-nginx controller
+  ansible.builtin.command: >
+    helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx
+    --namespace {{ ingress_controller_namespace }}
+    --create-namespace
+    --set controller.replicaCount=2
+    --wait
+    --timeout 300s
+  register: ingress_install
+  changed_when: "'STATUS: deployed' in ingress_install.stdout"
+  when: ingress_controller_enabled | default(true)
+
+- name: Add Bitnami Helm repository (for PostgreSQL)
+  ansible.builtin.command: >
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+  register: bitnami_add
+  changed_when: "'has been added' in bitnami_add.stdout"
+  failed_when: false
+
+- name: Update Helm repositories
+  ansible.builtin.command: helm repo update
+  changed_when: false

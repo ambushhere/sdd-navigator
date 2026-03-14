@@ -1,0 +1,15 @@
+---
+# Production environment variables
+helm_values_file: "values-prod.yaml"
+k8s_namespace: "sdd-navigator-prod"
+
+# PostgreSQL — use Vault or external secrets in practice
+db_password: "{{ vault_db_password }}"
+
+# Resources
+api_replicas: 3
+frontend_replicas: 3
+
+# Ingress
+api_ingress_host: api.sdd-navigator.example.com
+frontend_ingress_host: sdd-navigator.example.com

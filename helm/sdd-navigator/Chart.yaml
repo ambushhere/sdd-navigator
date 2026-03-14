@@ -1,0 +1,18 @@
+apiVersion: v2
+name: sdd-navigator
+description: Umbrella Helm chart for SDD Navigator stack
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: api
+    version: 0.1.0
+    repository: "file://charts/api"
+  - name: frontend
+    version: 0.1.0
+    repository: "file://charts/frontend"
+  - name: postgresql
+    version: 15.5.17
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled

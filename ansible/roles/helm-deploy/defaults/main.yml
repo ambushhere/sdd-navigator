@@ -1,0 +1,9 @@
+---
+# Defaults for helm-deploy role
+helm_release_name: sdd-navigator
+helm_chart_path: "{{ playbook_dir }}/../../helm/sdd-navigator"
+helm_values_file: "values-dev.yaml"
+helm_timeout: "600s"
+helm_atomic: true
+helm_wait: true
+helm_create_namespace: false

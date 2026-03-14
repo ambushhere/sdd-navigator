@@ -1,0 +1,60 @@
+# ---------------------------------------------------------
+# SDD Navigator — Production Environment Overrides
+# ---------------------------------------------------------
+
+api:
+  replicaCount: 3
+  image:
+    pullPolicy: Always
+  ingress:
+    enabled: true
+    className: nginx
+    host: api.sdd-navigator.example.com
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    tls:
+      enabled: true
+      secretName: api-tls
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  env:
+    DATABASE_URL: "postgres://sdd:${DB_PASSWORD}@sdd-navigator-postgresql:5432/sdd_navigator"
+    RUST_LOG: "info"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+frontend:
+  replicaCount: 3
+  image:
+    pullPolicy: Always
+  ingress:
+    enabled: true
+    className: nginx
+    host: sdd-navigator.example.com
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    tls:
+      enabled: true
+      secretName: frontend-tls
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+postgresql:
+  auth:
+    existingSecret: sdd-navigator-db-credentials
+  primary:
+    persistence:
+      size: 20Gi

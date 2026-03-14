@@ -1,0 +1,50 @@
+---
+# Role: helm-deploy — Deploy application via Helm
+
+- name: Update Helm chart dependencies
+  ansible.builtin.command: >
+    helm dependency update {{ helm_chart_path }}
+  changed_when: true
+
+- name: Deploy Helm chart
+  ansible.builtin.command: >
+    helm upgrade --install {{ helm_release_name }} {{ helm_chart_path }}
+    --namespace {{ k8s_namespace }}
+    --values {{ helm_chart_path }}/{{ helm_values_file }}
+    {% if helm_atomic %}--atomic{% endif %}
+    {% if helm_wait %}--wait{% endif %}
+    --timeout {{ helm_timeout }}
+    --set api.image.repository={{ api_image_repository }}
+    --set api.image.tag={{ api_image_tag }}
+    --set frontend.image.repository={{ frontend_image_repository }}
+    --set frontend.image.tag={{ frontend_image_tag }}
+  register: helm_deploy
+
+- name: Display deployment result
+  ansible.builtin.debug:
+    var: helm_deploy.stdout_lines
+
+- name: Verify all pods are running
+  ansible.builtin.command: >
+    kubectl get pods
+    --namespace {{ k8s_namespace }}
+    -l app.kubernetes.io/instance={{ helm_release_name }}
+    -o wide
+  changed_when: false
+  register: pod_status
+
+- name: Display pod status
+  ansible.builtin.debug:
+    var: pod_status.stdout_lines
+
+- name: Wait for API to be ready
+  ansible.builtin.command: >
+    kubectl wait --for=condition=ready pod
+    -l app.kubernetes.io/component=api
+    --namespace {{ k8s_namespace }}
+    --timeout=120s
+  changed_when: false
+  register: api_ready
+  retries: 3
+  delay: 10
+  until: api_ready.rc == 0
