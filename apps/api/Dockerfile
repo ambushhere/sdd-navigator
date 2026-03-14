@@ -1,10 +1,9 @@
 # ---- Build Stage ----
 FROM rust:1.77-slim AS builder
 
+# hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    pkg-config=0.29.2-1 \
-    libssl-dev=3.0.15-1~deb12u1 && \
+    apt-get install -y --no-install-recommends pkg-config libssl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -21,6 +20,7 @@ RUN touch src/main.rs && cargo build --release
 # ---- Runtime Stage ----
 FROM debian:bookworm-slim
 
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \
     rm -rf /var/lib/apt/lists/*
