@@ -2,7 +2,7 @@
 
 Kubernetes deployment infrastructure for the SDD Navigator stack: **Rust API**, **PostgreSQL**, and **Next.js frontend**.
 
-![Architecture Diagram](file:///C:/Users/himyn/.gemini/antigravity/brain/cc4d3f29-ff99-4a82-a6ce-3f832280fbe4/sdd_navigator_architecture_diagram_1773533757456.png)
+![Architecture Diagram](assets/architecture.png)
 
 ## Architecture
 
