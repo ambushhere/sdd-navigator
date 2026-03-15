@@ -1,5 +1,5 @@
 # ---- Build Stage ----
-FROM rust:1.77-slim AS builder
+FROM rust:1.88-slim AS builder
 
 # hadolint ignore=DL3008
 RUN apt-get update && \

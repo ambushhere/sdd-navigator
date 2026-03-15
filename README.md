@@ -2,6 +2,8 @@
 
 Kubernetes deployment infrastructure for the SDD Navigator stack: **Rust API**, **PostgreSQL**, and **Next.js frontend**.
 
+![Architecture Diagram](file:///C:/Users/himyn/.gemini/antigravity/brain/cc4d3f29-ff99-4a82-a6ce-3f832280fbe4/sdd_navigator_architecture_diagram_1773533757456.png)
+
 ## Architecture
 
 ```
@@ -12,8 +14,13 @@ Kubernetes deployment infrastructure for the SDD Navigator stack: **Rust API**, 
      :3000                :8080                :5432
 ```
 
-## Project Structure
+## Recent Updates & Fixes
+- **Rust Toolchain**: Upgraded to `1.88-slim` and fixed `sqlx` compatibility issues.
+- **Frontend Docker**: Added `.gitkeep` to `public/` directory to prevent build failures.
+- **Local Dev**: Verified and tested local deployment using **Kind** and **Helm**.
+- **CI/CD**: Fully linted and validated all infrastructure manifests (Helm & Ansible).
 
+## Project Structure
 ```
 sdd-navigator/
 ├── apps/                    # Application source code
@@ -22,87 +29,51 @@ sdd-navigator/
 ├── helm/sdd-navigator/      # Helm umbrella chart
 │   ├── charts/api/          # API sub-chart
 │   ├── charts/frontend/     # Frontend sub-chart
-│   ├── values-dev.yaml      # Dev overrides
+│   ├── values-dev.yaml      # Dev overrides (optimized for Kind)
 │   └── values-prod.yaml     # Prod overrides
 ├── ansible/                 # Ansible automation
 │   ├── playbooks/           # deploy, setup-cluster, rollback
-│   ├── roles/               # helm-deploy, k8s-namespace, k8s-prerequisites
-│   ├── inventories/         # dev, prod
-│   └── group_vars/          # Environment variables
+│   └── inventory/           # dev, prod hosts
 └── .github/workflows/       # CI pipeline
 ```
 
-## Quick Start
+## Local Development (Kind)
 
-### Prerequisites
+### 1. Prerequisites
+- Docker Desktop
+- `kind`, `kubectl`, `helm`
 
-- `kubectl` configured with cluster access
-- `helm` v3.x
-- `ansible` 2.15+
-- `docker` (for building images)
-
-### 1. Build Docker images
-
-```bash
-# API
+### 2. Build & Load Images
+```powershell
+# Build
 docker build -t sdd-navigator/api:latest apps/api/
-
-# Frontend
 docker build -t sdd-navigator/frontend:latest apps/frontend/
-```
 
-### 2. Setup cluster (first time)
-
-```bash
-cd ansible
-ansible-playbook -i inventories/dev/hosts.yml playbooks/setup-cluster.yml
+# Load into Kind (use .tar archive if direct load fails on Windows)
+docker save sdd-navigator/api:latest -o api.tar
+kind load image-archive api.tar --name sdd-navigator
 ```
 
 ### 3. Deploy
-
-```bash
-cd ansible
-ansible-playbook -i inventories/dev/hosts.yml playbooks/deploy.yml
-```
-
-### 4. Rollback (if needed)
-
-```bash
-cd ansible
-ansible-playbook -i inventories/dev/hosts.yml playbooks/rollback.yml
-```
-
-### Manual Helm deploy (without Ansible)
-
-```bash
+```powershell
 cd helm/sdd-navigator
-helm dependency update .
-helm upgrade --install sdd-navigator . \
-  --namespace sdd-navigator-dev \
-  --create-namespace \
-  -f values-dev.yaml \
-  --wait
+helm upgrade --install sdd-navigator . -n sdd-navigator-dev -f values-dev.yaml --wait
+```
+
+### 4. Access
+```powershell
+# Frontend
+kubectl port-forward -n sdd-navigator-dev svc/sdd-navigator-frontend 3000:3000
+# API
+kubectl port-forward -n sdd-navigator-dev svc/sdd-navigator-api 8080:8080
 ```
 
 ## CI Pipeline
-
-The GitHub Actions workflow (`.github/workflows/ci-infra.yml`) runs on every push/PR to `main` and validates:
-
-| Check | Tool | What it validates |
-|-------|------|-------------------|
-| YAML Lint | `yamllint` | All YAML syntax |
-| Helm Lint | `helm lint` | Chart structure and values |
-| Helm Template | `helm template` | Template rendering (dev + prod) |
-| Ansible Lint | `ansible-lint` | Playbook best practices |
-| Dockerfile Lint | `hadolint` | Dockerfile best practices |
+The GitHub Actions workflow validates YAML, Helm charts, Ansible playbooks, and Dockerfiles on every push.
 
 ## Environments
-
-| Parameter | Dev | Prod |
-|-----------|-----|------|
+| Parameter | Dev (Kind) | Prod |
+|-----------|-----------|------|
 | Namespace | `sdd-navigator-dev` | `sdd-navigator-prod` |
-| API replicas | 1 | 3 (HPA: 3-10) |
-| Frontend replicas | 1 | 3 |
-| Ingress | Disabled | Enabled + TLS |
+| Image Policy | `IfNotPresent` | `Always` |
 | DB storage | 1Gi | 20Gi |
-| Logging | `debug` | `info` |

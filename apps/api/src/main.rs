@@ -24,7 +24,7 @@ struct AppState {
 
 async fn health_check(data: web::Data<AppState>) -> impl Responder {
     let db_connected = sqlx::query("SELECT 1")
-        .execute(data.db_pool.as_ref())
+        .execute(&data.db_pool)
         .await
         .is_ok();
 
@@ -48,7 +48,7 @@ async fn info() -> impl Responder {
 }
 
 async fn readiness(data: web::Data<AppState>) -> impl Responder {
-    match sqlx::query("SELECT 1").execute(data.db_pool.as_ref()).await {
+    match sqlx::query("SELECT 1").execute(&data.db_pool).await {
         Ok(_) => HttpResponse::Ok().body("ready"),
         Err(_) => HttpResponse::ServiceUnavailable().body("not ready"),
     }

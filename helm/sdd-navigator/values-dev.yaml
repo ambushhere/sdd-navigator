@@ -4,6 +4,8 @@
 
 api:
   replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: 50m
@@ -19,6 +21,8 @@ api:
 
 frontend:
   replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: 50m
@@ -28,6 +32,9 @@ frontend:
       memory: 128Mi
 
 postgresql:
+  image:
+    tag: "latest"
+    pullPolicy: IfNotPresent
   primary:
     persistence:
       size: 1Gi
